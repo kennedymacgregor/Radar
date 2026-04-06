@@ -1,0 +1,5 @@
+{
+  "name": "Radar Data Health Dashboard",
+  "description": "A RevOps/CRM analytics platform dashboard for monitoring data health and fixing issues.",
+  "requestFramePermissions": []
+}
