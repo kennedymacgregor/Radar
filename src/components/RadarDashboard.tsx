@@ -274,22 +274,39 @@ const BowtieFunnel = () => {
 
 const StackedBlockChart = () => {
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const rows = 20; // Number of vertical blocks
-  const cols = 48; // Number of horizontal blocks (4 per month)
-  
+  const rows = 20;
+
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  // Sample data: each month has 4 columns of data
-  // Each data point is [unprocessedCount, incompleteCount]
-  const data = useMemo(() => {
-    const seed = (i: number) => Math.abs(Math.sin(i * 123.456) * 10);
-    return Array.from({ length: cols }).map((_, i) => {
-      const unprocessed = Math.floor(seed(i) * 0.8) + 1;
-      const incomplete = Math.floor(seed(i + 10) * 1.2) + 2;
-      return [unprocessed, incomplete];
-    });
-  }, [cols]);
+  // Each data point is [unprocessedRows, incompleteRows] out of 20 rows (1 row = 3k, max 60k)
+  // Pattern: Jan tiny, builds to Apr peak ~50k (17 rows), then progressively smaller
+  const data = useMemo<[number, number][]>(() => [
+    // JAN - tiny (~1-2 rows = 3-6k)
+    [0, 1], [1, 0], [0, 1], [0, 1],
+    // FEB - small (2 rows = 6k)
+    [1, 1], [1, 1], [1, 1], [1, 1],
+    // MAR - building up (5-8 rows = 15-24k)
+    [2, 3], [2, 4], [3, 4], [3, 5],
+    // APR - peak ~50k (15-17 rows = 45-51k)
+    [5, 10], [6, 10], [6, 11], [7, 10],
+    // MAY - decreasing (11-13 rows = 33-39k)
+    [5, 8], [5, 7], [4, 8], [4, 7],
+    // JUN - smaller (8-9 rows = 24-27k)
+    [3, 6], [3, 5], [3, 5], [3, 4],
+    // JUL - smaller (5-6 rows = 15-18k)
+    [2, 4], [2, 4], [2, 3], [2, 3],
+    // AUG - small (3-4 rows = 9-12k)
+    [1, 3], [2, 2], [1, 3], [2, 2],
+    // SEP - small (3 rows = 9k)
+    [1, 2], [1, 2], [2, 1], [1, 2],
+    // OCT - very small (2 rows = 6k)
+    [1, 1], [1, 1], [1, 1], [0, 2],
+    // NOV - tiny (1 row = 3k)
+    [0, 1], [1, 0], [0, 1], [0, 1],
+    // DEC - tiny (1 row = 3k)
+    [0, 1], [0, 1], [1, 0], [0, 1],
+  ], []);
 
   const handleMouseMove = (e: React.MouseEvent, colIndex: number) => {
     setMousePos({ x: e.clientX, y: e.clientY });
@@ -297,10 +314,10 @@ const StackedBlockChart = () => {
   };
 
   return (
-    <div className="w-full bg-white rounded-xl p-8 relative overflow-hidden">
-      <div className="flex items-start gap-6">
+    <div className="w-full relative">
+      <div className="flex items-stretch gap-4">
         {/* Y-Axis Labels */}
-        <div className="flex flex-col justify-between h-[240px] text-[10px] font-normal text-[#9ca3af] pt-1">
+        <div className="flex flex-col justify-between text-[10px] font-normal text-[#9ca3af]">
           <span>60k</span>
           <span>50k</span>
           <span>40k</span>
@@ -310,12 +327,12 @@ const StackedBlockChart = () => {
           <span>0k</span>
         </div>
 
-        <div className="flex-1">
-          <div className="relative h-[240px] flex gap-[2px]">
-            {/* Background Grid & Data Blocks */}
+        <div className="flex-1 min-w-0">
+          <div className="relative flex gap-[2px]">
+            {/* Data Blocks */}
             {data.map((counts, colIdx) => (
-              <div 
-                key={colIdx} 
+              <div
+                key={colIdx}
                 className="flex-1 flex flex-col-reverse gap-[2px] relative group cursor-crosshair"
                 onMouseMove={(e) => handleMouseMove(e, colIdx)}
                 onMouseLeave={() => setHoveredCol(null)}
@@ -323,20 +340,19 @@ const StackedBlockChart = () => {
                 {Array.from({ length: rows }).map((_, rowIdx) => {
                   const isUnprocessed = rowIdx < counts[0];
                   const isIncomplete = rowIdx >= counts[0] && rowIdx < (counts[0] + counts[1]);
-                  
+
                   return (
-                    <div 
+                    <div
                       key={rowIdx}
-                      className={`w-full h-[10px] rounded-[1px] transition-colors duration-200 ${
-                        isUnprocessed ? 'bg-[#dc2626]' : 
-                        isIncomplete ? 'bg-[#f59e0b]' : 
-                        'bg-[#f8f8f8]'
+                      className={`w-full aspect-square rounded-[1px] transition-colors duration-200 ${
+                        isUnprocessed ? 'bg-[#fca5a5]' :
+                        isIncomplete ? 'bg-[#fdba74]' :
+                        'bg-[#f3f4f6]'
                       } ${hoveredCol === colIdx ? 'ring-1 ring-blue-100' : ''}`}
                     />
                   );
                 })}
-                
-                {/* Vertical Guide Line */}
+
                 {hoveredCol === colIdx && (
                   <div className="absolute inset-x-0 -top-4 -bottom-4 border-x border-dashed border-[#6b6b6b]/20 pointer-events-none z-10" />
                 )}
@@ -350,9 +366,9 @@ const StackedBlockChart = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  style={{ 
-                    position: 'fixed', 
-                    left: mousePos.x + 20, 
+                  style={{
+                    position: 'fixed',
+                    left: mousePos.x + 20,
                     top: mousePos.y - 80,
                     zIndex: 100
                   }}
@@ -364,17 +380,17 @@ const StackedBlockChart = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#f59e0b]" />
+                        <div className="w-2 h-2 rounded-full bg-[#ea580c]" />
                         <span className="text-[11px] text-[#6b6b6b]">Incomplete</span>
                       </div>
-                      <span className="text-[11px] font-bold text-[#1a1a1a]">{data[hoveredCol][1]}k</span>
+                      <span className="text-[11px] font-bold text-[#1a1a1a]">{data[hoveredCol][1] * 3}k</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-[#dc2626]" />
                         <span className="text-[11px] text-[#6b6b6b]">Unprocessed</span>
                       </div>
-                      <span className="text-[11px] font-bold text-[#1a1a1a]">{data[hoveredCol][0]}k</span>
+                      <span className="text-[11px] font-bold text-[#1a1a1a]">{data[hoveredCol][0] * 3}k</span>
                     </div>
                   </div>
                 </motion.div>
@@ -383,24 +399,12 @@ const StackedBlockChart = () => {
           </div>
 
           {/* X-Axis Labels */}
-          <div className="flex justify-between mt-6 px-1">
-            {months.map((month, i) => (
-              <span key={month} className={`text-[10px] font-normal ${month === 'JUN' ? 'text-[#1a1a1a]' : 'text-[#9ca3af]'}`}>
+          <div className="flex justify-between mt-2">
+            {months.map((month) => (
+              <span key={month} className="text-[10px] font-normal text-[#9ca3af]">
                 {month}
               </span>
             ))}
-          </div>
-
-          {/* Legend */}
-          <div className="flex items-center gap-6 mt-8 justify-center">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-[2px] bg-[#dc2626]" />
-              <span className="text-[10px] font-medium text-[#6b6b6b]">Unprocessed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-[2px] bg-[#f59e0b]" />
-              <span className="text-[10px] font-medium text-[#6b6b6b]">Incomplete</span>
-            </div>
           </div>
         </div>
       </div>
@@ -458,34 +462,16 @@ const DataHealthCard = () => {
       {activeTab === 'bowtie' ? <BowtieFunnel /> : <TimelineVisualization />}
 
       <div className="mt-4 flex items-center min-h-[24px]">
-        {activeTab === 'bowtie' ? (
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#dc2626]" />
-              <span className="text-xs text-[#6b6b6b]">Unprocessed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#ea580c]" />
-              <span className="text-xs text-[#6b6b6b]">Incomplete</span>
-            </div>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#dc2626]" />
+            <span className="text-xs text-[#6b6b6b]">Unprocessed</span>
           </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-medium text-[#6b6b6b]">Less issues</span>
-            <div className="flex gap-1">
-              {[
-                'bg-[#f3f4f6]',
-                'bg-[#ffedd5]',
-                'bg-[#fb923c]',
-                'bg-[#ea580c]',
-                'bg-[#9a3412]'
-              ].map((color, i) => (
-                <div key={i} className={`w-3 h-3 rounded-[2px] ${color}`} />
-              ))}
-            </div>
-            <span className="text-[10px] font-medium text-[#6b6b6b]">More issues</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#ea580c]" />
+            <span className="text-xs text-[#6b6b6b]">Incomplete</span>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -773,12 +759,11 @@ const DataMedicSummaryCard = ({ onExpand, onApproveComplete, onStepComplete }: {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-[#6b6b6b]">Summarized at 6:00 PM</span>
-          <button 
+          <button
             onClick={onExpand}
-            className="flex items-center gap-2 px-3 py-1.5 border border-[#e8e8e5] text-[#1a1a1a] rounded-lg text-xs font-bold hover:bg-[#f5f5f3] transition-colors"
+            className="flex items-center p-1.5 border border-[#e8e8e5] text-[#1a1a1a] rounded-lg hover:bg-[#f5f5f3] transition-colors"
           >
             <Maximize2 size={12} className="text-[#1E293B]" />
-            Expand
           </button>
         </div>
       </div>
