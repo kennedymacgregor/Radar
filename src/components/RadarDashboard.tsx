@@ -476,14 +476,14 @@ const TimelineV2 = () => {
     95,97,96,94, 96,95,97,95, 94,96,95,94,
     95,96,94,93,
   ];
-  // Average: same shape, slightly smoother, different absolute range
-  const avgs = [
-    75,77,75,74, 76,78,75,77, 76,79,77,78,
-    77,80,78,79, 78,81,79,80, 78,74,71,73,
-    76,78,79,81, 80,82,81,83, 82,81,83,82,
-    81,83,82,80, 82,81,83,81, 80,82,81,80,
-    81,82,80,79,
-  ];
+  // Rolling 8-week average of scores
+  const windowSize = 8;
+  const avgs = scores.map((_, i) => {
+    const start = Math.max(0, i - Math.floor(windowSize / 2));
+    const end = Math.min(scores.length, start + windowSize);
+    const slice = scores.slice(start, end);
+    return slice.reduce((s, v) => s + v, 0) / slice.length;
+  });
   const issues = [
     20,22,25,23, 24,28,30,26, 32,38,42,35,
     30,38,45,40, 32,38,42,36, 28,35,38,32,
