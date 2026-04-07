@@ -280,31 +280,32 @@ const StackedBlockChart = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // [unprocessed, incomplete] — total drives heatmap intensity
+  // Wider bell curve: Mar/Apr/May all elevated, gentler falloff
   const data = useMemo<[number, number][]>(() => [
     // JAN - tiny
-    [0, 1], [1, 0], [0, 1], [0, 1],
+    [0, 1], [0, 1], [1, 1], [0, 1],
     // FEB - small
-    [1, 1], [1, 1], [1, 1], [1, 1],
-    // MAR - building
-    [2, 3], [2, 4], [3, 4], [3, 5],
-    // APR - peak
-    [5, 10], [6, 10], [6, 11], [7, 10],
-    // MAY - decreasing
-    [5, 8], [5, 7], [4, 8], [4, 7],
-    // JUN
-    [3, 6], [3, 5], [3, 5], [3, 4],
+    [1, 2], [1, 2], [1, 3], [1, 2],
+    // MAR - rising
+    [3, 5], [3, 6], [4, 6], [4, 7],
+    // APR - peak (flatter, not as extreme)
+    [5, 7], [5, 8], [5, 7], [5, 8],
+    // MAY - similar to APR
+    [4, 7], [4, 6], [4, 6], [3, 6],
+    // JUN - gradual decline
+    [3, 5], [3, 4], [3, 4], [2, 4],
     // JUL
-    [2, 4], [2, 4], [2, 3], [2, 3],
+    [2, 3], [2, 3], [1, 3], [1, 3],
     // AUG
-    [1, 3], [2, 2], [1, 3], [2, 2],
+    [1, 2], [1, 2], [1, 2], [1, 1],
     // SEP
-    [1, 2], [1, 2], [2, 1], [1, 2],
+    [1, 1], [1, 1], [1, 1], [1, 1],
     // OCT
-    [1, 1], [1, 1], [1, 1], [0, 2],
+    [0, 1], [1, 1], [0, 1], [0, 1],
     // NOV - tiny
-    [0, 1], [1, 0], [0, 1], [0, 1],
+    [0, 1], [0, 1], [0, 1], [0, 1],
     // DEC - tiny
-    [0, 1], [0, 1], [1, 0], [0, 1],
+    [0, 1], [0, 1], [0, 1], [0, 1],
   ], []);
 
   const maxTotal = 17;
