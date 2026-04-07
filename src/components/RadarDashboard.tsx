@@ -320,10 +320,10 @@ const StackedBlockChart = () => {
     const intensity = total / maxTotal;
     const r1 = seededRand(colIdx * 31 + rowIdx * 17);
     const r2 = seededRand(colIdx * 31 + rowIdx * 17 + 500);
-    // Colour ~85% of cells at peak, fewer in quiet months
-    if (r1 > intensity * 0.85) return '#f3f4f6';
-    // Shade is mostly driven by column intensity with a little randomness
-    const shade = intensity * 0.75 + r2 * 0.25;
+    // Colour ~95% of cells at peak, fewer in quiet months
+    if (r1 > intensity * 0.95) return '#f3f4f6';
+    // Shade is almost entirely driven by column intensity for strong gradient
+    const shade = intensity * 0.88 + r2 * 0.12;
     if (shade < 0.18) return '#fecaca';
     if (shade < 0.36) return '#fca5a5';
     if (shade < 0.54) return '#f87171';
