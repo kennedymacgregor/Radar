@@ -199,28 +199,27 @@ const BowtieFunnel = () => {
   const narrowBot = 130;  // bottom y at centre
   const cy = vH / 2;      // 100
 
-  // y bounds on the straight-line bowtie at a given x
-  const getBounds = (x: number) => {
-    const midX = vW / 2; // 600
-    if (x <= midX) {
-      const frac = (x - pad) / (midX - pad);
-      return {
-        yTop:    tY + (narrowTop - tY) * frac,
-        yBottom: bY - (bY - narrowBot) * frac,
-      };
-    } else {
-      const frac = (x - midX) / (vW - pad - midX);
-      return {
-        yTop:    narrowTop + (tY - narrowTop) * frac,
-        yBottom: narrowBot + (bY - narrowBot) * frac,
-      };
-    }
-  };
-
   const N = 7;
   const innerW = vW - 2 * pad; // 1140
   // 8 x-positions (including outer edges) for dividers
   const divXs = Array.from({ length: N + 1 }, (_, i) => pad + (innerW * i) / N);
+
+  // The Closing section (index 3–4) forms a flat rectangle at the narrowest point
+  const xLeft  = divXs[3]; // left boundary of Closing  ≈ 518.6
+  const xRight = divXs[4]; // right boundary of Closing ≈ 681.4
+
+  // y bounds for divider lines — flat in the Closing section, diagonal elsewhere
+  const getBounds = (x: number) => {
+    if (x <= xLeft) {
+      const frac = (x - pad) / (xLeft - pad);
+      return { yTop: tY + (narrowTop - tY) * frac, yBottom: bY - (bY - narrowBot) * frac };
+    } else if (x <= xRight) {
+      return { yTop: narrowTop, yBottom: narrowBot };
+    } else {
+      const frac = (x - xRight) / (vW - pad - xRight);
+      return { yTop: narrowTop + (tY - narrowTop) * frac, yBottom: narrowBot + (bY - narrowBot) * frac };
+    }
+  };
 
   // Pills at outer edges sit on the actual vertical left/right edge of the shape
   const pillXs = divXs.map((x, i) => {
@@ -250,15 +249,17 @@ const BowtieFunnel = () => {
   const pillH = 22;
   const pillW = (val: string) => val.length === 1 ? 28 : val.length === 2 ? 36 : 44;
 
-  // Straight diagonal edges, rounded outer corners only
+  // Straight diagonal edges → flat Closing rectangle → rounded outer corners only
   const path = [
     `M ${pad},${tY}`,
-    `L ${vW / 2},${narrowTop}`,
+    `L ${xLeft},${narrowTop}`,
+    `L ${xRight},${narrowTop}`,
     `L ${vW - pad},${tY}`,
     `A ${cr} ${cr} 0 0 1 ${vW - pad + cr},${tY + cr}`,
     `L ${vW - pad + cr},${bY - cr}`,
     `A ${cr} ${cr} 0 0 1 ${vW - pad},${bY}`,
-    `L ${vW / 2},${narrowBot}`,
+    `L ${xRight},${narrowBot}`,
+    `L ${xLeft},${narrowBot}`,
     `L ${pad},${bY}`,
     `A ${cr} ${cr} 0 0 1 ${pad - cr},${bY - cr}`,
     `L ${pad - cr},${tY + cr}`,
@@ -276,8 +277,8 @@ const BowtieFunnel = () => {
         })}
       </svg>
 
-      {/* Layer 2: pills + stage labels (normal aspect ratio — no distortion) */}
-      <svg viewBox={`0 0 ${vW} ${vH}`} className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
+      {/* Layer 2: pills + stage labels — overflow visible so edge pills aren't clipped */}
+      <svg viewBox={`0 0 ${vW} ${vH}`} className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet" overflow="visible">
         {stages.map((label, i) => (
           <text
             key={i}
