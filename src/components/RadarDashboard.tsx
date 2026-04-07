@@ -218,7 +218,7 @@ const BowtieFunnel = () => {
   };
 
   return (
-    <div className="relative w-full h-64 flex items-center justify-center bg-white overflow-hidden">
+    <div className="relative w-full h-48 flex items-center justify-center bg-white overflow-hidden">
       <svg viewBox="0 0 1200 300" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
         {/* Main Bowtie Outline */}
         <path
@@ -274,7 +274,7 @@ const BowtieFunnel = () => {
 
 const StackedBlockChart = () => {
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const rows = 7;
+  const rows = 10;
 
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
