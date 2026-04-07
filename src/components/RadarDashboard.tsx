@@ -274,39 +274,48 @@ const BowtieFunnel = () => {
 
 const StackedBlockChart = () => {
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const rows = 20;
+  const rows = 7;
 
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  // Each data point is [unprocessedRows, incompleteRows] out of 20 rows (1 row = 3k, max 60k)
-  // Pattern: Jan tiny, builds to Apr peak ~50k (17 rows), then progressively smaller
+  // [unprocessed, incomplete] — total drives heatmap intensity
   const data = useMemo<[number, number][]>(() => [
-    // JAN - tiny (~1-2 rows = 3-6k)
+    // JAN - tiny
     [0, 1], [1, 0], [0, 1], [0, 1],
-    // FEB - small (2 rows = 6k)
+    // FEB - small
     [1, 1], [1, 1], [1, 1], [1, 1],
-    // MAR - building up (5-8 rows = 15-24k)
+    // MAR - building
     [2, 3], [2, 4], [3, 4], [3, 5],
-    // APR - peak ~50k (15-17 rows = 45-51k)
+    // APR - peak
     [5, 10], [6, 10], [6, 11], [7, 10],
-    // MAY - decreasing (11-13 rows = 33-39k)
+    // MAY - decreasing
     [5, 8], [5, 7], [4, 8], [4, 7],
-    // JUN - smaller (8-9 rows = 24-27k)
+    // JUN
     [3, 6], [3, 5], [3, 5], [3, 4],
-    // JUL - smaller (5-6 rows = 15-18k)
+    // JUL
     [2, 4], [2, 4], [2, 3], [2, 3],
-    // AUG - small (3-4 rows = 9-12k)
+    // AUG
     [1, 3], [2, 2], [1, 3], [2, 2],
-    // SEP - small (3 rows = 9k)
+    // SEP
     [1, 2], [1, 2], [2, 1], [1, 2],
-    // OCT - very small (2 rows = 6k)
+    // OCT
     [1, 1], [1, 1], [1, 1], [0, 2],
-    // NOV - tiny (1 row = 3k)
+    // NOV - tiny
     [0, 1], [1, 0], [0, 1], [0, 1],
-    // DEC - tiny (1 row = 3k)
+    // DEC - tiny
     [0, 1], [0, 1], [1, 0], [0, 1],
   ], []);
+
+  // light grey (no issues) → deep red (many issues)
+  const getColor = (total: number): string => {
+    if (total === 0) return '#f3f4f6';
+    if (total <= 2)  return '#fecaca';
+    if (total <= 6)  return '#fca5a5';
+    if (total <= 10) return '#f87171';
+    if (total <= 14) return '#ef4444';
+    return '#dc2626';
+  };
 
   const handleMouseMove = (e: React.MouseEvent, colIndex: number) => {
     setMousePos({ x: e.clientX, y: e.clientY });
@@ -315,49 +324,29 @@ const StackedBlockChart = () => {
 
   return (
     <div className="w-full relative">
-      <div className="flex items-stretch gap-3">
-        {/* Y-Axis Labels */}
-        <div className="flex flex-col justify-between text-[9px] font-normal text-[#9ca3af]">
-          <span>60k</span>
-          <span>50k</span>
-          <span>40k</span>
-          <span>30k</span>
-          <span>20k</span>
-          <span>10k</span>
-          <span>0k</span>
-        </div>
-
         <div className="flex-1 min-w-0">
           <div className="relative flex gap-[1px]">
             {/* Data Blocks */}
-            {data.map((counts, colIdx) => (
+            {data.map((counts, colIdx) => {
+              const total = counts[0] + counts[1];
+              const color = getColor(total);
+              return (
               <div
                 key={colIdx}
-                className="flex-1 max-w-[5px] flex flex-col-reverse gap-[1px] relative group cursor-crosshair"
+                className="flex-1 max-w-[5px] flex flex-col gap-[1px] relative cursor-crosshair"
                 onMouseMove={(e) => handleMouseMove(e, colIdx)}
                 onMouseLeave={() => setHoveredCol(null)}
               >
-                {Array.from({ length: rows }).map((_, rowIdx) => {
-                  const isUnprocessed = rowIdx < counts[0];
-                  const isIncomplete = rowIdx >= counts[0] && rowIdx < (counts[0] + counts[1]);
-
-                  return (
+                {Array.from({ length: rows }).map((_, rowIdx) => (
                     <div
                       key={rowIdx}
-                      className={`w-full aspect-square rounded-[1px] transition-colors duration-200 ${
-                        isUnprocessed ? 'bg-[#fca5a5]' :
-                        isIncomplete ? 'bg-[#fdba74]' :
-                        'bg-[#f3f4f6]'
-                      } ${hoveredCol === colIdx ? 'ring-1 ring-blue-100' : ''}`}
+                      className={`w-full aspect-square rounded-[1px] transition-colors duration-200 ${hoveredCol === colIdx ? 'opacity-80' : ''}`}
+                      style={{ backgroundColor: color }}
                     />
-                  );
-                })}
-
-                {hoveredCol === colIdx && (
-                  <div className="absolute inset-x-0 -top-4 -bottom-4 border-x border-dashed border-[#6b6b6b]/20 pointer-events-none z-10" />
-                )}
+                ))}
               </div>
-            ))}
+              );
+            })}
 
             {/* Tooltip */}
             <AnimatePresence>
@@ -407,7 +396,6 @@ const StackedBlockChart = () => {
             ))}
           </div>
         </div>
-      </div>
     </div>
   );
 };
@@ -462,16 +450,26 @@ const DataHealthCard = () => {
       {activeTab === 'bowtie' ? <BowtieFunnel /> : <TimelineVisualization />}
 
       <div className="mt-4 flex items-center min-h-[24px]">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#dc2626]" />
-            <span className="text-xs text-[#6b6b6b]">Unprocessed</span>
+        {activeTab === 'bowtie' ? (
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#dc2626]" />
+              <span className="text-xs text-[#6b6b6b]">Unprocessed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#ea580c]" />
+              <span className="text-xs text-[#6b6b6b]">Incomplete</span>
+            </div>
           </div>
+        ) : (
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#ea580c]" />
-            <span className="text-xs text-[#6b6b6b]">Incomplete</span>
+            <span className="text-[10px] font-medium text-[#6b6b6b]">Less issues</span>
+            {['#f3f4f6', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626'].map((color, i) => (
+              <div key={i} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: color }} />
+            ))}
+            <span className="text-[10px] font-medium text-[#6b6b6b]">More issues</span>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
