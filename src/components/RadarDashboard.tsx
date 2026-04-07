@@ -333,7 +333,7 @@ const StackedBlockChart = () => {
               return (
               <div
                 key={colIdx}
-                className="flex-1 max-w-[5px] flex flex-col gap-[1px] relative cursor-crosshair"
+                className="flex-1 flex flex-col gap-[1px] relative cursor-crosshair"
                 onMouseMove={(e) => handleMouseMove(e, colIdx)}
                 onMouseLeave={() => setHoveredCol(null)}
               >
