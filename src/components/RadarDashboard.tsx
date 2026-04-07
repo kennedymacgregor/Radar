@@ -510,7 +510,7 @@ const DataHealthCard = () => {
         </div>
       </div>
 
-      <div className="h-44 overflow-hidden">
+      <div className="h-44">
         {activeTab === 'bowtie' ? <BowtieFunnel /> : <TimelineVisualization />}
       </div>
 
