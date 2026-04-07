@@ -315,9 +315,9 @@ const StackedBlockChart = () => {
 
   return (
     <div className="w-full relative">
-      <div className="flex items-stretch gap-4">
+      <div className="flex items-stretch gap-3">
         {/* Y-Axis Labels */}
-        <div className="flex flex-col justify-between text-[10px] font-normal text-[#9ca3af]">
+        <div className="flex flex-col justify-between text-[9px] font-normal text-[#9ca3af]">
           <span>60k</span>
           <span>50k</span>
           <span>40k</span>
@@ -328,12 +328,12 @@ const StackedBlockChart = () => {
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="relative flex gap-[2px]">
+          <div className="relative flex gap-[1px]">
             {/* Data Blocks */}
             {data.map((counts, colIdx) => (
               <div
                 key={colIdx}
-                className="flex-1 flex flex-col-reverse gap-[2px] relative group cursor-crosshair"
+                className="flex-1 flex flex-col-reverse gap-[1px] relative group cursor-crosshair"
                 onMouseMove={(e) => handleMouseMove(e, colIdx)}
                 onMouseLeave={() => setHoveredCol(null)}
               >
@@ -344,7 +344,7 @@ const StackedBlockChart = () => {
                   return (
                     <div
                       key={rowIdx}
-                      className={`w-full aspect-square rounded-[1px] transition-colors duration-200 ${
+                      className={`w-full h-[4px] rounded-[1px] transition-colors duration-200 ${
                         isUnprocessed ? 'bg-[#fca5a5]' :
                         isIncomplete ? 'bg-[#fdba74]' :
                         'bg-[#f3f4f6]'
@@ -399,9 +399,9 @@ const StackedBlockChart = () => {
           </div>
 
           {/* X-Axis Labels */}
-          <div className="flex justify-between mt-2">
+          <div className="flex justify-between mt-1">
             {months.map((month) => (
-              <span key={month} className="text-[10px] font-normal text-[#9ca3af]">
+              <span key={month} className="text-[9px] font-normal text-[#9ca3af]">
                 {month}
               </span>
             ))}
