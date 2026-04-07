@@ -468,26 +468,26 @@ const TimelineVisualization = () => {
 };
 
 const TimelineV2 = () => {
-  // Weekly data — 48 points (4 per month × 12 months)
+  // 52 weekly data points — smooth arc: dips Feb, peaks Aug, declines Nov
   const scores = [
-    94,91,88,92, 95,93,90,93, 91,94,96,93, 91,96,98,95,
-    92,95,93,97, 94,91,96,98, 97,94,91,95, 93,95,92,89,
-    92,95,97,94, 91,96,98,95, 93,97,95,98, 96,95,97,98,
-  ];
-  const unprocessed = [
-    3,5,8,6, 4,7,9,5, 8,12,10,7, 5,9,13,11,
-    6,8,10,7, 4,7,9,5, 3,6,8,5,  4,8,10,7,
-    5,7,9,6,  3,5,8,6, 4,6,8,5,  3,4,5,4,
-  ];
-  const incomplete = [
-    8,10,15,12, 9,14,18,11, 16,22,20,14, 11,18,24,20,
-    13,16,19,14, 9,14,18,11, 8,12,16,10, 9,16,19,14,
-    11,14,18,12, 8,11,16,12, 9,12,16,10, 7,9,11,9,
+    91,90,90,89, 88,88,87,88, 89,90,91,91,
+    92,92,93,93, 94,94,95,95, 95,96,96,96,
+    97,97,97,97, 97,98,97,97, 96,96,95,95,
+    95,94,94,93, 93,92,91,91, 90,90,89,89,
+    89,89,88,88,
   ];
 
-  // 4-week rolling average for the dotted line
+  const issues = [
+    20,22,25,23, 24,28,30,26, 32,38,42,35,
+    30,38,45,40, 32,38,42,36, 28,35,38,32,
+    22,30,36,28, 25,32,38,30, 28,35,40,32,
+    25,30,35,28, 20,25,30,24, 18,20,24,20,
+    15,18,20,16,
+  ];
+
+  // 6-week rolling average
   const avgScores = scores.map((_, i) => {
-    const slice = scores.slice(Math.max(0, i - 3), i + 1);
+    const slice = scores.slice(Math.max(0, i - 5), i + 1);
     return slice.reduce((a, b) => a + b, 0) / slice.length;
   });
 
@@ -499,25 +499,39 @@ const TimelineV2 = () => {
   const barTop = 168, barBottom = 248;
   const labelY = 266;
 
-  const n = scores.length; // 48
+  const n = scores.length; // 52
   const xStep = (vW - padL - padR) / (n - 1);
   const getX = (i: number) => padL + i * xStep;
 
-  const scoreMin = 86, scoreMax = 100;
+  const scoreMin = 85, scoreMax = 100;
   const scoreToY = (s: number) =>
     lineBottom - ((s - scoreMin) / (scoreMax - scoreMin)) * (lineBottom - lineTop);
 
-  const totals = scores.map((_, i) => unprocessed[i] + incomplete[i]);
-  const maxTotal = Math.max(...totals);
+  const maxIssue = Math.max(...issues);
   const barAreaH = barBottom - barTop;
-  const toBarH = (v: number) => (v / maxTotal) * barAreaH;
-  const barW = xStep * 0.22;
+  const toBarH = (v: number) => (v / maxIssue) * barAreaH;
+  const barW = xStep * 0.15;
 
-  const scorePath = scores.map((s, i) =>
-    `${i === 0 ? 'M' : 'L'} ${getX(i).toFixed(1)},${scoreToY(s).toFixed(1)}`).join(' ');
-  const avgPath = avgScores.map((s, i) =>
-    `${i === 0 ? 'M' : 'L'} ${getX(i).toFixed(1)},${scoreToY(s).toFixed(1)}`).join(' ');
+  // Catmull-Rom spline for smooth curves
+  const catmullRom = (vals: number[], tension = 0.35) => {
+    const pts = vals.map((v, i) => ({ x: getX(i), y: scoreToY(v) }));
+    let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const cp1x = p1.x + (p2.x - p0.x) * tension;
+      const cp1y = p1.y + (p2.y - p0.y) * tension;
+      const cp2x = p2.x - (p3.x - p1.x) * tension;
+      const cp2y = p2.y - (p3.y - p1.y) * tension;
+      d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return d;
+  };
 
+  const scorePath = catmullRom(scores);
+  const avgPath   = catmullRom(avgScores);
   const yTicks = [90, 93, 96, 99];
 
   return (
@@ -525,12 +539,12 @@ const TimelineV2 = () => {
       <svg viewBox={`0 0 ${vW} ${vH}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="v2ScoreGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#374151" stopOpacity="0.08" />
+            <stop offset="0%" stopColor="#374151" stopOpacity="0.07" />
             <stop offset="100%" stopColor="#374151" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* Horizontal grid lines — no labels */}
+        {/* Grid lines */}
         {yTicks.map(tick => (
           <line key={tick} x1={padL} y1={scoreToY(tick)} x2={vW - padR} y2={scoreToY(tick)} stroke="#f0eeeb" strokeWidth="1" />
         ))}
@@ -541,32 +555,25 @@ const TimelineV2 = () => {
           fill="url(#v2ScoreGrad)"
         />
 
-        {/* Average dotted line */}
+        {/* Average dotted */}
         <path d={avgPath} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4" strokeLinecap="round" />
 
-        {/* Score solid line */}
-        <path d={scorePath} fill="none" stroke="#374151" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Score solid */}
+        <path d={scorePath} fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" />
 
         {/* Separator */}
         <line x1={padL} y1={barTop - 4} x2={vW - padR} y2={barTop - 4} stroke="#e8e8e5" strokeWidth="1" />
 
-        {/* Stacked bars */}
-        {scores.map((_, i) => {
+        {/* Single-colour bars */}
+        {issues.map((v, i) => {
+          const h = toBarH(v);
           const x = getX(i);
-          const incH = toBarH(incomplete[i]);
-          const unpH = toBarH(unprocessed[i]);
-          const totalH = incH + unpH;
-          return (
-            <g key={i}>
-              <rect x={x - barW / 2} y={barBottom - incH}    width={barW} height={incH}  fill="#ea580c" opacity="0.85" rx="1" />
-              <rect x={x - barW / 2} y={barBottom - totalH}  width={barW} height={unpH}  fill="#dc2626" opacity="0.9"  rx="1" />
-            </g>
-          );
+          return <rect key={i} x={x - barW / 2} y={barBottom - h} width={barW} height={h} fill="#ea580c" opacity="0.75" rx="1" />;
         })}
 
-        {/* Month labels — one per 4-week block */}
+        {/* Month labels at start of each month (every 4.33 weeks) */}
         {monthLabels.map((label, m) => (
-          <text key={m} x={getX(m * 4)} y={labelY} textAnchor="middle" fill="#9ca3af" fontSize="11">{label}</text>
+          <text key={m} x={getX(Math.round(m * (n - 1) / 12))} y={labelY} textAnchor="middle" fill="#9ca3af" fontSize="11">{label}</text>
         ))}
       </svg>
     </div>
@@ -657,12 +664,8 @@ const DataHealthCard = () => {
               <span className="text-xs text-[#6b6b6b]">Average</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-[2px] bg-[#dc2626]" />
-              <span className="text-xs text-[#6b6b6b]">Unprocessed</span>
-            </div>
-            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-[2px] bg-[#ea580c]" />
-              <span className="text-xs text-[#6b6b6b]">Incomplete</span>
+              <span className="text-xs text-[#6b6b6b]">Amount of issues</span>
             </div>
           </div>
         )}
