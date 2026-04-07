@@ -467,8 +467,97 @@ const TimelineVisualization = () => {
   return <StackedBlockChart />;
 };
 
+const TimelineV2 = () => {
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const scores =      [94, 92, 91, 93, 95, 96, 97, 95, 94, 96, 97, 98];
+  const avgScores =   [93, 92.5, 92, 92.5, 93.5, 94.5, 95.5, 95.5, 95, 95.5, 96, 96.5];
+  const unprocessed = [5,  8,  12, 10,  7,  4,  3,  8,  9,  6,  4,  3];
+  const incomplete =  [12, 18, 24, 20, 15, 10,  8, 16, 18, 12,  9,  7];
+
+  const vW = 1200, vH = 280;
+  const padL = 46, padR = 10;
+  const lineTop = 8, lineBottom = 155;
+  const barTop = 168, barBottom = 248;
+  const labelY = 266;
+
+  const n = months.length;
+  const xStep = (vW - padL - padR) / (n - 1);
+  const getX = (i: number) => padL + i * xStep;
+
+  const scoreMin = 88, scoreMax = 100;
+  const scoreToY = (s: number) =>
+    lineBottom - ((s - scoreMin) / (scoreMax - scoreMin)) * (lineBottom - lineTop);
+
+  const totals = months.map((_, i) => unprocessed[i] + incomplete[i]);
+  const maxTotal = Math.max(...totals);
+  const barAreaH = barBottom - barTop;
+  const toBarH = (v: number) => (v / maxTotal) * barAreaH;
+  const barW = xStep * 0.48;
+
+  const scorePath = scores.map((s, i) =>
+    `${i === 0 ? 'M' : 'L'} ${getX(i).toFixed(1)},${scoreToY(s).toFixed(1)}`).join(' ');
+  const avgPath = avgScores.map((s, i) =>
+    `${i === 0 ? 'M' : 'L'} ${getX(i).toFixed(1)},${scoreToY(s).toFixed(1)}`).join(' ');
+
+  const yTicks = [90, 93, 96, 99];
+
+  return (
+    <div className="w-full h-full">
+      <svg viewBox={`0 0 ${vW} ${vH}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="v2ScoreGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#374151" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#374151" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal grid lines */}
+        {yTicks.map(tick => {
+          const y = scoreToY(tick);
+          return (
+            <g key={tick}>
+              <line x1={padL} y1={y} x2={vW - padR} y2={y} stroke="#f0eeeb" strokeWidth="1" />
+              <text x={padL - 6} y={y + 4} textAnchor="end" fill="#9ca3af" fontSize="11">{tick}%</text>
+            </g>
+          );
+        })}
+
+        {/* Area fill under score line */}
+        <path
+          d={`${scorePath} L ${getX(n - 1).toFixed(1)},${lineBottom} L ${getX(0).toFixed(1)},${lineBottom} Z`}
+          fill="url(#v2ScoreGrad)"
+        />
+
+        {/* Average dotted line */}
+        <path d={avgPath} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4" strokeLinecap="round" />
+
+        {/* Score solid line */}
+        <path d={scorePath} fill="none" stroke="#374151" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* Separator */}
+        <line x1={padL} y1={barTop - 4} x2={vW - padR} y2={barTop - 4} stroke="#e8e8e5" strokeWidth="1" />
+
+        {/* Stacked bars + month labels */}
+        {months.map((month, i) => {
+          const x = getX(i);
+          const incH = toBarH(incomplete[i]);
+          const unpH = toBarH(unprocessed[i]);
+          const totalH = incH + unpH;
+          return (
+            <g key={i}>
+              <rect x={x - barW / 2} y={barBottom - incH} width={barW} height={incH} fill="#ea580c" opacity="0.85" rx="1.5" />
+              <rect x={x - barW / 2} y={barBottom - totalH} width={barW} height={unpH} fill="#dc2626" opacity="0.9" rx="1.5" />
+              <text x={x} y={labelY} textAnchor="middle" fill="#9ca3af" fontSize="11">{month}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
 const DataHealthCard = () => {
-  const [activeTab, setActiveTab] = React.useState<'bowtie' | 'timeline'>('bowtie');
+  const [activeTab, setActiveTab] = React.useState<'bowtie' | 'timeline' | 'v2'>('bowtie');
 
   return (
     <div className="bg-white rounded-xl border border-[#e8e8e5] shadow-[0_1px_3px_rgba(0,0,0,0.06)] p-6">
@@ -500,18 +589,24 @@ const DataHealthCard = () => {
             >
               Bowtie
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('timeline')}
               className={`px-3 py-1 text-xs font-medium rounded transition-all ${activeTab === 'timeline' ? 'bg-white text-[#1a1a1a]' : 'text-[#6b6b6b] hover:text-[#1a1a1a]'}`}
             >
               Timeline
             </button>
+            <button
+              onClick={() => setActiveTab('v2')}
+              className={`px-3 py-1 text-xs font-medium rounded transition-all ${activeTab === 'v2' ? 'bg-white text-[#1a1a1a]' : 'text-[#6b6b6b] hover:text-[#1a1a1a]'}`}
+            >
+              Timeline V2
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="h-44">
-        {activeTab === 'bowtie' ? <BowtieFunnel /> : <TimelineVisualization />}
+      <div className={activeTab === 'v2' ? 'h-56' : 'h-44'}>
+        {activeTab === 'bowtie' ? <BowtieFunnel /> : activeTab === 'timeline' ? <TimelineVisualization /> : <TimelineV2 />}
       </div>
 
       <div className="mt-4 flex items-center min-h-[24px]">
@@ -526,13 +621,32 @@ const DataHealthCard = () => {
               <span className="text-xs text-[#6b6b6b]">Incomplete</span>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'timeline' ? (
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-medium text-[#6b6b6b]">Less issues</span>
             {['#f3f4f6', '#fde8d0', '#fb923c', '#ea580c', '#b91c1c', '#7c2d12'].map((color, i) => (
               <div key={i} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: color }} />
             ))}
             <span className="text-[10px] font-medium text-[#6b6b6b]">More issues</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <svg width="18" height="8" viewBox="0 0 18 8"><line x1="0" y1="4" x2="18" y2="4" stroke="#374151" strokeWidth="2" strokeLinecap="round"/></svg>
+              <span className="text-xs text-[#6b6b6b]">Score</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg width="18" height="8" viewBox="0 0 18 8"><line x1="0" y1="4" x2="18" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 3" strokeLinecap="round"/></svg>
+              <span className="text-xs text-[#6b6b6b]">Average</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-[2px] bg-[#dc2626]" />
+              <span className="text-xs text-[#6b6b6b]">Unprocessed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-[2px] bg-[#ea580c]" />
+              <span className="text-xs text-[#6b6b6b]">Incomplete</span>
+            </div>
           </div>
         )}
       </div>
