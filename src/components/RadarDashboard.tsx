@@ -315,18 +315,19 @@ const StackedBlockChart = () => {
     return x - Math.floor(x);
   };
 
-  // Per-cell color: scattered, varied, mostly grey in quiet months
+  // Per-cell color: gradient-weighted by column intensity with scatter
   const getCellColor = (colIdx: number, rowIdx: number, total: number): string => {
     const intensity = total / maxTotal;
     const r1 = seededRand(colIdx * 31 + rowIdx * 17);
     const r2 = seededRand(colIdx * 31 + rowIdx * 17 + 500);
-    // More grey overall — only colour if rand < intensity * 0.7
-    if (r1 > intensity * 0.7) return '#f3f4f6';
-    const shade = r2;
-    if (shade < 0.25) return '#fecaca';
-    if (shade < 0.50) return '#fca5a5';
-    if (shade < 0.70) return '#f87171';
-    if (shade < 0.87) return '#ef4444';
+    // Colour ~85% of cells at peak, fewer in quiet months
+    if (r1 > intensity * 0.85) return '#f3f4f6';
+    // Shade is mostly driven by column intensity with a little randomness
+    const shade = intensity * 0.75 + r2 * 0.25;
+    if (shade < 0.18) return '#fecaca';
+    if (shade < 0.36) return '#fca5a5';
+    if (shade < 0.54) return '#f87171';
+    if (shade < 0.72) return '#ef4444';
     return '#dc2626';
   };
 
