@@ -468,21 +468,21 @@ const TimelineVisualization = () => {
 };
 
 const TimelineV2 = () => {
-  // Score: upper band — wavy, overall gentle rise then fall
+  // Stock-chart style: starts low, rises with volatility, sharp dip mid-year, recovers high
   const scores = [
-    93,94,93,92, 91,92,93,92, 91,92,94,93,
-    93,94,95,94, 94,95,96,95, 95,96,97,96,
-    96,97,97,96, 96,97,96,95, 95,96,95,94,
-    94,95,94,93, 93,94,93,92, 92,91,92,91,
-    91,90,91,90,
+    88,91,89,87, 90,92,89,91, 90,93,91,92,
+    91,94,92,93, 92,95,93,94, 92,88,85,87,
+    90,92,93,95, 94,96,95,97, 96,95,97,96,
+    95,97,96,94, 96,95,97,95, 94,96,95,94,
+    95,96,94,93,
   ];
-  // Average: lower band — independent scale, similar gentle waves
+  // Average: same shape, slightly smoother, different absolute range
   const avgs = [
-    78,79,78,77, 76,77,78,77, 77,78,79,78,
-    78,79,80,79, 79,80,81,80, 80,81,82,81,
-    81,82,82,81, 81,82,81,80, 80,81,80,79,
-    79,80,79,78, 78,79,78,77, 77,76,77,76,
-    76,75,76,75,
+    75,77,75,74, 76,78,75,77, 76,79,77,78,
+    77,80,78,79, 78,81,79,80, 78,74,71,73,
+    76,78,79,81, 80,82,81,83, 82,81,83,82,
+    81,83,82,80, 82,81,83,81, 80,82,81,80,
+    81,82,80,79,
   ];
   const issues = [
     20,22,25,23, 24,28,30,26, 32,38,42,35,
@@ -504,20 +504,21 @@ const TimelineV2 = () => {
   const xStep = (vW - padL - padR) / (n - 1);
   const getX = (i: number) => padL + i * xStep;
 
-  // Each line occupies its own band — independently normalised
+  // Two bands close together
   const lineH = lineBottom - lineTop;
-  const bandH = lineH * 0.36;
+  const bandH = lineH * 0.44;               // each band height
+  const sBotY  = lineTop + bandH;           // bottom of score band
+  const aBotY  = lineBottom;               // bottom of avg band
+  const aTopY  = lineBottom - bandH;       // top of avg band
 
   const sMin = Math.min(...scores), sMax = Math.max(...scores);
   const aMin = Math.min(...avgs),   aMax = Math.max(...avgs);
 
-  const scoreToY = (s: number) =>
-    (lineTop + bandH) - ((s - sMin) / (sMax - sMin)) * bandH;
-  const avgToY = (a: number) =>
-    lineBottom - ((a - aMin) / (aMax - aMin)) * bandH;
+  const scoreToY = (s: number) => sBotY  - ((s - sMin) / (sMax - sMin)) * bandH;
+  const avgToY   = (a: number) => aBotY  - ((a - aMin) / (aMax - aMin)) * bandH;
 
-  // Catmull-Rom spline
-  const spline = (vals: number[], toY: (v: number) => number, tension = 0.35) => {
+  // Catmull-Rom — lower tension for more angularity
+  const spline = (vals: number[], toY: (v: number) => number, tension = 0.18) => {
     const pts = vals.map((v, i) => ({ x: getX(i), y: toY(v) }));
     let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -541,25 +542,36 @@ const TimelineV2 = () => {
   const toBarH = (v: number) => (v / maxIssue) * (barBottom - barTop);
   const barW = xStep * 0.15;
 
-  // Light horizontal grid lines — 3 evenly spaced
-  const gridYs = [
-    lineTop + lineH * 0.25,
-    lineTop + lineH * 0.5,
-    lineTop + lineH * 0.75,
-  ];
+  const x0 = getX(0).toFixed(1);
+  const xN = getX(n - 1).toFixed(1);
 
   return (
     <div className="w-full h-full">
       <svg viewBox={`0 0 ${vW} ${vH}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="sGrad" x1="0" y1={lineTop} x2="0" y2={sBotY} gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#374151" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#374151" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="aGrad" x1="0" y1={aTopY} x2="0" y2={aBotY} gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#94a3b8" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
         {/* Subtle grid lines */}
-        {gridYs.map((y, i) => (
-          <line key={i} x1={padL} y1={y} x2={vW - padR} y2={y} stroke="#f0eeeb" strokeWidth="1" />
+        {[0.33, 0.66].map((f, i) => (
+          <line key={i} x1={padL} y1={lineTop + lineH * f} x2={vW - padR} y2={lineTop + lineH * f} stroke="#f0eeeb" strokeWidth="1" />
         ))}
 
-        {/* Average dotted — lower band */}
-        <path d={avgPath} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4" strokeLinecap="round" />
+        {/* Score gradient fill */}
+        <path d={`${scorePath} L ${xN},${sBotY} L ${x0},${sBotY} Z`} fill="url(#sGrad)" />
+        {/* Avg gradient fill */}
+        <path d={`${avgPath} L ${xN},${aBotY} L ${x0},${aBotY} Z`} fill="url(#aGrad)" />
 
-        {/* Score solid — upper band */}
+        {/* Average dotted */}
+        <path d={avgPath} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4" strokeLinecap="round" />
+        {/* Score solid */}
         <path d={scorePath} fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" />
 
         {/* Separator */}
