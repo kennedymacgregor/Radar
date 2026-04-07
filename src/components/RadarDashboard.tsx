@@ -267,7 +267,7 @@ const BowtieFunnel = () => {
   ].join(' ');
 
   return (
-    <div className="relative w-full h-44 bg-white">
+    <div className="relative w-full h-full bg-white">
       {/* Layer 1: bowtie shape + internal divider lines (stretched to fill width) */}
       <svg viewBox={`0 0 ${vW} ${vH}`} className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
         <path d={path} fill="white" stroke="#e8e8e5" strokeWidth="1.5" />
@@ -320,7 +320,7 @@ const BowtieFunnel = () => {
 
 const StackedBlockChart = () => {
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const rows = 10;
+  const rows = 7;
 
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -510,7 +510,9 @@ const DataHealthCard = () => {
         </div>
       </div>
 
-      {activeTab === 'bowtie' ? <BowtieFunnel /> : <TimelineVisualization />}
+      <div className="h-44 overflow-hidden">
+        {activeTab === 'bowtie' ? <BowtieFunnel /> : <TimelineVisualization />}
+      </div>
 
       <div className="mt-4 flex items-center min-h-[24px]">
         {activeTab === 'bowtie' ? (
