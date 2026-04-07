@@ -372,13 +372,13 @@ const StackedBlockChart = () => {
     // Scatter: randomly replace ~18% of cells with grey or light red
     const r3 = seededRand(colIdx * 31 + rowIdx * 17 + 999);
     if (r3 < 0.12) return '#f3f4f6';
-    if (r3 < 0.18) return '#fde8d0';
+    if (r3 < 0.18) return '#fef3c7';
     const shade = intensity * 0.65 + r2 * 0.35;
-    if (shade < 0.20) return '#fde8d0';
-    if (shade < 0.40) return '#fb923c';
-    if (shade < 0.58) return '#ea580c';
-    if (shade < 0.94) return '#c2410c';
-    return '#7c2d12';
+    if (shade < 0.20) return '#fef3c7';
+    if (shade < 0.40) return '#fcd34d';
+    if (shade < 0.58) return '#d97706';
+    if (shade < 0.94) return '#ea580c';
+    return '#dc2626';
   };
 
   const handleMouseMove = (e: React.MouseEvent, colIndex: number) => {
@@ -529,7 +529,7 @@ const DataHealthCard = () => {
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-medium text-[#6b6b6b]">Less issues</span>
-            {['#f3f4f6', '#fde8d0', '#fb923c', '#ea580c', '#c2410c', '#7c2d12'].map((color, i) => (
+            {['#f3f4f6', '#fef3c7', '#fcd34d', '#d97706', '#ea580c', '#dc2626'].map((color, i) => (
               <div key={i} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: color }} />
             ))}
             <span className="text-[10px] font-medium text-[#6b6b6b]">More issues</span>
