@@ -322,12 +322,15 @@ const StackedBlockChart = () => {
     const r2 = seededRand(colIdx * 31 + rowIdx * 17 + 500);
     // Colour ~95% of cells at peak, fewer in quiet months
     if (r1 > intensity * 0.95) return '#f3f4f6';
-    // More spread: intensity drives 65%, randomness 35% — avoids clustering at deepest red
+    // Scatter: randomly replace ~18% of cells with grey or light red
+    const r3 = seededRand(colIdx * 31 + rowIdx * 17 + 999);
+    if (r3 < 0.12) return '#f3f4f6';
+    if (r3 < 0.18) return '#fecaca';
     const shade = intensity * 0.65 + r2 * 0.35;
     if (shade < 0.20) return '#fecaca';
     if (shade < 0.40) return '#fca5a5';
     if (shade < 0.58) return '#f87171';
-    if (shade < 0.88) return '#ef4444';
+    if (shade < 0.94) return '#ef4444';
     return '#dc2626';
   };
 
