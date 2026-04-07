@@ -333,7 +333,7 @@ const StackedBlockChart = () => {
             {data.map((counts, colIdx) => (
               <div
                 key={colIdx}
-                className="flex-1 flex flex-col-reverse gap-[1px] relative group cursor-crosshair"
+                className="flex-1 max-w-[5px] flex flex-col-reverse gap-[1px] relative group cursor-crosshair"
                 onMouseMove={(e) => handleMouseMove(e, colIdx)}
                 onMouseLeave={() => setHoveredCol(null)}
               >
@@ -344,7 +344,7 @@ const StackedBlockChart = () => {
                   return (
                     <div
                       key={rowIdx}
-                      className={`w-full h-[4px] rounded-[1px] transition-colors duration-200 ${
+                      className={`w-full aspect-square rounded-[1px] transition-colors duration-200 ${
                         isUnprocessed ? 'bg-[#fca5a5]' :
                         isIncomplete ? 'bg-[#fdba74]' :
                         'bg-[#f3f4f6]'
