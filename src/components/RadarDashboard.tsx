@@ -219,19 +219,23 @@ const BowtieFunnel = () => {
 
   return (
     <div className="relative w-full h-44 bg-white overflow-hidden">
-      <svg viewBox="0 0 1200 300" className="w-full h-full" preserveAspectRatio="none">
-        {/* Main Bowtie Outline */}
+      {/* Layer 1: stretched — shape and divider lines only */}
+      <svg viewBox="0 0 1200 300" className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
         <path
           d="M 0 0 L 550 110 L 650 110 L 1200 0 L 1200 300 L 650 190 L 550 190 L 0 300 Z"
           fill="none"
           stroke="#e8e8e5"
           strokeWidth="1.5"
         />
-        
-        {/* Vertical Dividers and Pills */}
+        {lines.map((line, i) => (
+          <line key={i} x1={line.x} y1={line.y1} x2={line.x} y2={line.y2} stroke="#e8e8e5" strokeWidth="1.5" />
+        ))}
+      </svg>
+
+      {/* Layer 2: normal aspect ratio — pills and labels */}
+      <svg viewBox="0 0 1200 300" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
         {lines.map((line, i) => (
           <g key={i}>
-            <line x1={line.x} y1={line.y1} x2={line.x} y2={line.y2} stroke="#e8e8e5" strokeWidth="1.5" />
             {line.pills.map((pill, pIdx) => {
               const colors = pillColors[pill.color as keyof typeof pillColors];
               const yPos = 150 + (pIdx === 0 ? -28 : 28) * (line.pills.length > 1 ? 1 : 0);
@@ -239,12 +243,13 @@ const BowtieFunnel = () => {
               return (
                 <g key={pIdx} transform={`translate(${line.x - pillWidth/2}, ${yPos - 12})`}>
                   <rect width={pillWidth} height="24" rx="6" fill={colors.bg} />
-                  <text 
-                    x={pillWidth/2} 
-                    y="16" 
-                    textAnchor="middle" 
-                    fill={colors.text} 
-                    className="text-[13px] font-bold"
+                  <text
+                    x={pillWidth/2}
+                    y="16"
+                    textAnchor="middle"
+                    fill={colors.text}
+                    fontSize="13"
+                    fontWeight="bold"
                   >
                     {pill.val}
                   </text>
@@ -253,16 +258,15 @@ const BowtieFunnel = () => {
             })}
           </g>
         ))}
-
-        {/* Labels */}
         {stages.map((stage, i) => (
-          <text 
-            key={i} 
-            x={stage.x} 
-            y="155" 
-            textAnchor="middle" 
-            fill="#94a3b8" 
-            className="text-[13px] font-medium"
+          <text
+            key={i}
+            x={stage.x}
+            y="155"
+            textAnchor="middle"
+            fill="#94a3b8"
+            fontSize="13"
+            fontWeight="500"
           >
             {stage.label}
           </text>
