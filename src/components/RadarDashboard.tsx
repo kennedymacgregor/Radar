@@ -468,31 +468,50 @@ const TimelineVisualization = () => {
 };
 
 const TimelineV2 = () => {
-  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  const scores =      [94, 92, 91, 93, 95, 96, 97, 95, 94, 96, 97, 98];
-  const avgScores =   [93, 92.5, 92, 92.5, 93.5, 94.5, 95.5, 95.5, 95, 95.5, 96, 96.5];
-  const unprocessed = [5,  8,  12, 10,  7,  4,  3,  8,  9,  6,  4,  3];
-  const incomplete =  [12, 18, 24, 20, 15, 10,  8, 16, 18, 12,  9,  7];
+  // Weekly data — 48 points (4 per month × 12 months)
+  const scores = [
+    94,91,88,92, 95,93,90,93, 91,94,96,93, 91,96,98,95,
+    92,95,93,97, 94,91,96,98, 97,94,91,95, 93,95,92,89,
+    92,95,97,94, 91,96,98,95, 93,97,95,98, 96,95,97,98,
+  ];
+  const unprocessed = [
+    3,5,8,6, 4,7,9,5, 8,12,10,7, 5,9,13,11,
+    6,8,10,7, 4,7,9,5, 3,6,8,5,  4,8,10,7,
+    5,7,9,6,  3,5,8,6, 4,6,8,5,  3,4,5,4,
+  ];
+  const incomplete = [
+    8,10,15,12, 9,14,18,11, 16,22,20,14, 11,18,24,20,
+    13,16,19,14, 9,14,18,11, 8,12,16,10, 9,16,19,14,
+    11,14,18,12, 8,11,16,12, 9,12,16,10, 7,9,11,9,
+  ];
+
+  // 4-week rolling average for the dotted line
+  const avgScores = scores.map((_, i) => {
+    const slice = scores.slice(Math.max(0, i - 3), i + 1);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+
+  const monthLabels = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
   const vW = 1200, vH = 280;
-  const padL = 46, padR = 10;
+  const padL = 8, padR = 8;
   const lineTop = 8, lineBottom = 155;
   const barTop = 168, barBottom = 248;
   const labelY = 266;
 
-  const n = months.length;
+  const n = scores.length; // 48
   const xStep = (vW - padL - padR) / (n - 1);
   const getX = (i: number) => padL + i * xStep;
 
-  const scoreMin = 88, scoreMax = 100;
+  const scoreMin = 86, scoreMax = 100;
   const scoreToY = (s: number) =>
     lineBottom - ((s - scoreMin) / (scoreMax - scoreMin)) * (lineBottom - lineTop);
 
-  const totals = months.map((_, i) => unprocessed[i] + incomplete[i]);
+  const totals = scores.map((_, i) => unprocessed[i] + incomplete[i]);
   const maxTotal = Math.max(...totals);
   const barAreaH = barBottom - barTop;
   const toBarH = (v: number) => (v / maxTotal) * barAreaH;
-  const barW = xStep * 0.48;
+  const barW = xStep * 0.22;
 
   const scorePath = scores.map((s, i) =>
     `${i === 0 ? 'M' : 'L'} ${getX(i).toFixed(1)},${scoreToY(s).toFixed(1)}`).join(' ');
@@ -511,18 +530,12 @@ const TimelineV2 = () => {
           </linearGradient>
         </defs>
 
-        {/* Horizontal grid lines */}
-        {yTicks.map(tick => {
-          const y = scoreToY(tick);
-          return (
-            <g key={tick}>
-              <line x1={padL} y1={y} x2={vW - padR} y2={y} stroke="#f0eeeb" strokeWidth="1" />
-              <text x={padL - 6} y={y + 4} textAnchor="end" fill="#9ca3af" fontSize="11">{tick}%</text>
-            </g>
-          );
-        })}
+        {/* Horizontal grid lines — no labels */}
+        {yTicks.map(tick => (
+          <line key={tick} x1={padL} y1={scoreToY(tick)} x2={vW - padR} y2={scoreToY(tick)} stroke="#f0eeeb" strokeWidth="1" />
+        ))}
 
-        {/* Area fill under score line */}
+        {/* Area fill */}
         <path
           d={`${scorePath} L ${getX(n - 1).toFixed(1)},${lineBottom} L ${getX(0).toFixed(1)},${lineBottom} Z`}
           fill="url(#v2ScoreGrad)"
@@ -537,20 +550,24 @@ const TimelineV2 = () => {
         {/* Separator */}
         <line x1={padL} y1={barTop - 4} x2={vW - padR} y2={barTop - 4} stroke="#e8e8e5" strokeWidth="1" />
 
-        {/* Stacked bars + month labels */}
-        {months.map((month, i) => {
+        {/* Stacked bars */}
+        {scores.map((_, i) => {
           const x = getX(i);
           const incH = toBarH(incomplete[i]);
           const unpH = toBarH(unprocessed[i]);
           const totalH = incH + unpH;
           return (
             <g key={i}>
-              <rect x={x - barW / 2} y={barBottom - incH} width={barW} height={incH} fill="#ea580c" opacity="0.85" rx="1.5" />
-              <rect x={x - barW / 2} y={barBottom - totalH} width={barW} height={unpH} fill="#dc2626" opacity="0.9" rx="1.5" />
-              <text x={x} y={labelY} textAnchor="middle" fill="#9ca3af" fontSize="11">{month}</text>
+              <rect x={x - barW / 2} y={barBottom - incH}    width={barW} height={incH}  fill="#ea580c" opacity="0.85" rx="1" />
+              <rect x={x - barW / 2} y={barBottom - totalH}  width={barW} height={unpH}  fill="#dc2626" opacity="0.9"  rx="1" />
             </g>
           );
         })}
+
+        {/* Month labels — one per 4-week block */}
+        {monthLabels.map((label, m) => (
+          <text key={m} x={getX(m * 4)} y={labelY} textAnchor="middle" fill="#9ca3af" fontSize="11">{label}</text>
+        ))}
       </svg>
     </div>
   );
