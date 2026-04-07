@@ -191,26 +191,43 @@ const SubNav = ({ activeTab, onTabChange }: { activeTab: 'radar' | 'inbox', onTa
 
 const BowtieFunnel = () => {
   const vW = 1200, vH = 200;
-  const pad = 30;       // x where bezier meets corner arc
-  const cr = 15;        // corner radius
-  const tY = 15;        // top edge y at outer corners
-  const bY = 185;       // bottom edge y at outer corners
-  const tcY = 108;      // top bezier control y (curves down to ~64 at centre)
-  const bcY = 92;       // bottom bezier control y (curves up to ~136 at centre)
-  const cy = vH / 2;    // 100 — vertical centre
+  const pad = 30;         // x where diagonal line meets corner arc
+  const cr = 15;          // outer corner radius
+  const tY = 15;          // top y at outer edges
+  const bY = 185;         // bottom y at outer edges
+  const narrowTop = 70;   // top y at centre (narrowest point)
+  const narrowBot = 130;  // bottom y at centre
+  const cy = vH / 2;      // 100
 
-  // Exact y bounds on the bezier curve at a given x
-  // Because control-point x == midpoint of P0.x and P2.x, t maps linearly to x
+  // y bounds on the straight-line bowtie at a given x
   const getBounds = (x: number) => {
-    const t = Math.max(0, Math.min(1, (x - pad) / (vW - 2 * pad)));
-    const c = 2 * t * (1 - t);
-    return { yTop: tY + c * (tcY - tY), yBottom: bY - c * (bY - bcY) };
+    const midX = vW / 2; // 600
+    if (x <= midX) {
+      const frac = (x - pad) / (midX - pad);
+      return {
+        yTop:    tY + (narrowTop - tY) * frac,
+        yBottom: bY - (bY - narrowBot) * frac,
+      };
+    } else {
+      const frac = (x - midX) / (vW - pad - midX);
+      return {
+        yTop:    narrowTop + (tY - narrowTop) * frac,
+        yBottom: narrowBot + (bY - narrowBot) * frac,
+      };
+    }
   };
 
   const N = 7;
-  const innerW = vW - 2 * pad;
-  // 8 x-positions: 2 outer edges + 6 internal dividers
+  const innerW = vW - 2 * pad; // 1140
+  // 8 x-positions (including outer edges) for dividers
   const divXs = Array.from({ length: N + 1 }, (_, i) => pad + (innerW * i) / N);
+
+  // Pills at outer edges sit on the actual vertical left/right edge of the shape
+  const pillXs = divXs.map((x, i) => {
+    if (i === 0) return pad - cr;      // left vertical edge at x=15
+    if (i === N) return vW - pad + cr; // right vertical edge at x=1185
+    return x;
+  });
 
   const stages = ['Awareness', 'Education', 'Selection', 'Closing', 'Onboarding', 'Retention', 'Expansion'];
 
@@ -233,14 +250,16 @@ const BowtieFunnel = () => {
   const pillH = 22;
   const pillW = (val: string) => val.length === 1 ? 28 : val.length === 2 ? 36 : 44;
 
-  // Bowtie path: bezier top + bottom edges with rounded corners
+  // Straight diagonal edges, rounded outer corners only
   const path = [
     `M ${pad},${tY}`,
-    `Q ${vW / 2},${tcY} ${vW - pad},${tY}`,
+    `L ${vW / 2},${narrowTop}`,
+    `L ${vW - pad},${tY}`,
     `A ${cr} ${cr} 0 0 1 ${vW - pad + cr},${tY + cr}`,
     `L ${vW - pad + cr},${bY - cr}`,
     `A ${cr} ${cr} 0 0 1 ${vW - pad},${bY}`,
-    `Q ${vW / 2},${bcY} ${pad},${bY}`,
+    `L ${vW / 2},${narrowBot}`,
+    `L ${pad},${bY}`,
     `A ${cr} ${cr} 0 0 1 ${pad - cr},${bY - cr}`,
     `L ${pad - cr},${tY + cr}`,
     `A ${cr} ${cr} 0 0 1 ${pad},${tY} Z`,
@@ -259,7 +278,6 @@ const BowtieFunnel = () => {
 
       {/* Layer 2: pills + stage labels (normal aspect ratio — no distortion) */}
       <svg viewBox={`0 0 ${vW} ${vH}`} className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
-        {/* Stage labels centred in each section */}
         {stages.map((label, i) => (
           <text
             key={i}
@@ -274,9 +292,8 @@ const BowtieFunnel = () => {
           </text>
         ))}
 
-        {/* Pills centred on each divider line */}
         {dividers.map((div, i) => {
-          const x = divXs[i];
+          const x = pillXs[i];
           return (
             <g key={i}>
               {div.pills.map((pill, pIdx) => {
