@@ -468,15 +468,22 @@ const TimelineVisualization = () => {
 };
 
 const TimelineV2 = () => {
-  // 52 weekly data points — smooth arc: dips Feb, peaks Aug, declines Nov
+  // Score: upper band — wavy, overall gentle rise then fall
   const scores = [
-    91,90,90,89, 88,88,87,88, 89,90,91,91,
-    92,92,93,93, 94,94,95,95, 95,96,96,96,
-    97,97,97,97, 97,98,97,97, 96,96,95,95,
-    95,94,94,93, 93,92,91,91, 90,90,89,89,
-    89,89,88,88,
+    93,94,93,92, 91,92,93,92, 91,92,94,93,
+    93,94,95,94, 94,95,96,95, 95,96,97,96,
+    96,97,97,96, 96,97,96,95, 95,96,95,94,
+    94,95,94,93, 93,94,93,92, 92,91,92,91,
+    91,90,91,90,
   ];
-
+  // Average: lower band — independent scale, similar gentle waves
+  const avgs = [
+    78,79,78,77, 76,77,78,77, 77,78,79,78,
+    78,79,80,79, 79,80,81,80, 80,81,82,81,
+    81,82,82,81, 81,82,81,80, 80,81,80,79,
+    79,80,79,78, 78,79,78,77, 77,76,77,76,
+    76,75,76,75,
+  ];
   const issues = [
     20,22,25,23, 24,28,30,26, 32,38,42,35,
     30,38,45,40, 32,38,42,36, 28,35,38,32,
@@ -485,36 +492,33 @@ const TimelineV2 = () => {
     15,18,20,16,
   ];
 
-  // 6-week rolling average
-  const avgScores = scores.map((_, i) => {
-    const slice = scores.slice(Math.max(0, i - 5), i + 1);
-    return slice.reduce((a, b) => a + b, 0) / slice.length;
-  });
-
   const monthLabels = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
   const vW = 1200, vH = 280;
   const padL = 8, padR = 8;
-  const lineTop = 8, lineBottom = 155;
-  const barTop = 168, barBottom = 248;
-  const labelY = 266;
+  const lineTop = 8, lineBottom = 158;
+  const barTop = 170, barBottom = 250;
+  const labelY = 268;
 
-  const n = scores.length; // 52
+  const n = scores.length;
   const xStep = (vW - padL - padR) / (n - 1);
   const getX = (i: number) => padL + i * xStep;
 
-  const scoreMin = 85, scoreMax = 100;
+  // Each line occupies its own band — independently normalised
+  const lineH = lineBottom - lineTop;
+  const bandH = lineH * 0.36;
+
+  const sMin = Math.min(...scores), sMax = Math.max(...scores);
+  const aMin = Math.min(...avgs),   aMax = Math.max(...avgs);
+
   const scoreToY = (s: number) =>
-    lineBottom - ((s - scoreMin) / (scoreMax - scoreMin)) * (lineBottom - lineTop);
+    (lineTop + bandH) - ((s - sMin) / (sMax - sMin)) * bandH;
+  const avgToY = (a: number) =>
+    lineBottom - ((a - aMin) / (aMax - aMin)) * bandH;
 
-  const maxIssue = Math.max(...issues);
-  const barAreaH = barBottom - barTop;
-  const toBarH = (v: number) => (v / maxIssue) * barAreaH;
-  const barW = xStep * 0.15;
-
-  // Catmull-Rom spline for smooth curves
-  const catmullRom = (vals: number[], tension = 0.35) => {
-    const pts = vals.map((v, i) => ({ x: getX(i), y: scoreToY(v) }));
+  // Catmull-Rom spline
+  const spline = (vals: number[], toY: (v: number) => number, tension = 0.35) => {
+    const pts = vals.map((v, i) => ({ x: getX(i), y: toY(v) }));
     let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[Math.max(0, i - 1)];
@@ -530,48 +534,44 @@ const TimelineV2 = () => {
     return d;
   };
 
-  const scorePath = catmullRom(scores);
-  const avgPath   = catmullRom(avgScores);
-  const yTicks = [90, 93, 96, 99];
+  const scorePath = spline(scores, scoreToY);
+  const avgPath   = spline(avgs,   avgToY);
+
+  const maxIssue = Math.max(...issues);
+  const toBarH = (v: number) => (v / maxIssue) * (barBottom - barTop);
+  const barW = xStep * 0.15;
+
+  // Light horizontal grid lines — 3 evenly spaced
+  const gridYs = [
+    lineTop + lineH * 0.25,
+    lineTop + lineH * 0.5,
+    lineTop + lineH * 0.75,
+  ];
 
   return (
     <div className="w-full h-full">
       <svg viewBox={`0 0 ${vW} ${vH}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="v2ScoreGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#374151" stopOpacity="0.07" />
-            <stop offset="100%" stopColor="#374151" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        {/* Grid lines */}
-        {yTicks.map(tick => (
-          <line key={tick} x1={padL} y1={scoreToY(tick)} x2={vW - padR} y2={scoreToY(tick)} stroke="#f0eeeb" strokeWidth="1" />
+        {/* Subtle grid lines */}
+        {gridYs.map((y, i) => (
+          <line key={i} x1={padL} y1={y} x2={vW - padR} y2={y} stroke="#f0eeeb" strokeWidth="1" />
         ))}
 
-        {/* Area fill */}
-        <path
-          d={`${scorePath} L ${getX(n - 1).toFixed(1)},${lineBottom} L ${getX(0).toFixed(1)},${lineBottom} Z`}
-          fill="url(#v2ScoreGrad)"
-        />
-
-        {/* Average dotted */}
+        {/* Average dotted — lower band */}
         <path d={avgPath} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4" strokeLinecap="round" />
 
-        {/* Score solid */}
+        {/* Score solid — upper band */}
         <path d={scorePath} fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" />
 
         {/* Separator */}
         <line x1={padL} y1={barTop - 4} x2={vW - padR} y2={barTop - 4} stroke="#e8e8e5" strokeWidth="1" />
 
-        {/* Single-colour bars */}
+        {/* Bars */}
         {issues.map((v, i) => {
           const h = toBarH(v);
-          const x = getX(i);
-          return <rect key={i} x={x - barW / 2} y={barBottom - h} width={barW} height={h} fill="#ea580c" opacity="0.75" rx="1" />;
+          return <rect key={i} x={getX(i) - barW / 2} y={barBottom - h} width={barW} height={h} fill="#ea580c" opacity="0.75" rx="1" />;
         })}
 
-        {/* Month labels at start of each month (every 4.33 weeks) */}
+        {/* Month labels */}
         {monthLabels.map((label, m) => (
           <text key={m} x={getX(Math.round(m * (n - 1) / 12))} y={labelY} textAnchor="middle" fill="#9ca3af" fontSize="11">{label}</text>
         ))}
