@@ -190,87 +190,111 @@ const SubNav = ({ activeTab, onTabChange }: { activeTab: 'radar' | 'inbox', onTa
 };
 
 const BowtieFunnel = () => {
-  const stages = [
-    { label: 'Awareness', x: 175 },
-    { label: 'Education', x: 325 },
-    { label: 'Selection', x: 475 },
-    { label: 'Closing', x: 600 },
-    { label: 'Onboarding', x: 725 },
-    { label: 'Retention', x: 875 },
-    { label: 'Expansion', x: 1025 },
-  ];
+  const vW = 1200, vH = 200;
+  const pad = 30;       // x where bezier meets corner arc
+  const cr = 15;        // corner radius
+  const tY = 15;        // top edge y at outer corners
+  const bY = 185;       // bottom edge y at outer corners
+  const tcY = 108;      // top bezier control y (curves down to ~64 at centre)
+  const bcY = 92;       // bottom bezier control y (curves up to ~136 at centre)
+  const cy = vH / 2;    // 100 — vertical centre
 
-  const lines = [
-    { x: 100, y1: 20,  y2: 280, pills: [{ val: '108', color: 'red' }, { val: '32', color: 'yellow' }] },
-    { x: 250, y1: 50,  y2: 250, pills: [{ val: '12', color: 'red' }, { val: '23', color: 'yellow' }] },
-    { x: 400, y1: 80,  y2: 220, pills: [{ val: '4', color: 'red' }, { val: '45', color: 'yellow' }] },
-    { x: 550, y1: 110, y2: 190, pills: [] },
-    { x: 650, y1: 110, y2: 190, pills: [] },
-    { x: 800, y1: 80,  y2: 220, pills: [] },
-    { x: 950, y1: 50,  y2: 250, pills: [{ val: '5', color: 'red' }] },
-    { x: 1100, y1: 20, y2: 280, pills: [{ val: '4', color: 'red' }] },
+  // Exact y bounds on the bezier curve at a given x
+  // Because control-point x == midpoint of P0.x and P2.x, t maps linearly to x
+  const getBounds = (x: number) => {
+    const t = Math.max(0, Math.min(1, (x - pad) / (vW - 2 * pad)));
+    const c = 2 * t * (1 - t);
+    return { yTop: tY + c * (tcY - tY), yBottom: bY - c * (bY - bcY) };
+  };
+
+  const N = 7;
+  const innerW = vW - 2 * pad;
+  // 8 x-positions: 2 outer edges + 6 internal dividers
+  const divXs = Array.from({ length: N + 1 }, (_, i) => pad + (innerW * i) / N);
+
+  const stages = ['Awareness', 'Education', 'Selection', 'Closing', 'Onboarding', 'Retention', 'Expansion'];
+
+  const dividers = [
+    { pills: [{ val: '108', color: 'red' }, { val: '32', color: 'orange' }] },
+    { pills: [{ val: '12', color: 'red' }, { val: '23', color: 'orange' }] },
+    { pills: [{ val: '4', color: 'red' }, { val: '45', color: 'orange' }] },
+    { pills: [{ val: '38', color: 'orange' }] },
+    { pills: [{ val: '3', color: 'orange' }] },
+    { pills: [{ val: '1', color: 'orange' }] },
+    { pills: [{ val: '5', color: 'red' }] },
+    { pills: [{ val: '4', color: 'red' }] },
   ];
 
   const pillColors = {
-    red: { bg: '#fee2e2', text: '#dc2626' },
-    yellow: { bg: '#fef3c7', text: '#d97706' },
-    orange: { bg: '#ffedd5', text: '#ea580c' },
+    red:    { bg: '#fee2e2', text: '#dc2626' },
+    orange: { bg: '#fff7ed', text: '#ea580c' },
   };
 
+  const pillH = 22;
+  const pillW = (val: string) => val.length === 1 ? 28 : val.length === 2 ? 36 : 44;
+
+  // Bowtie path: bezier top + bottom edges with rounded corners
+  const path = [
+    `M ${pad},${tY}`,
+    `Q ${vW / 2},${tcY} ${vW - pad},${tY}`,
+    `A ${cr} ${cr} 0 0 1 ${vW - pad + cr},${tY + cr}`,
+    `L ${vW - pad + cr},${bY - cr}`,
+    `A ${cr} ${cr} 0 0 1 ${vW - pad},${bY}`,
+    `Q ${vW / 2},${bcY} ${pad},${bY}`,
+    `A ${cr} ${cr} 0 0 1 ${pad - cr},${bY - cr}`,
+    `L ${pad - cr},${tY + cr}`,
+    `A ${cr} ${cr} 0 0 1 ${pad},${tY} Z`,
+  ].join(' ');
+
   return (
-    <div className="relative w-full h-44 bg-white overflow-hidden">
-      {/* Layer 1: stretched — shape and divider lines only */}
-      <svg viewBox="0 0 1200 300" className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-        <path
-          d="M 0 0 L 550 110 L 650 110 L 1200 0 L 1200 300 L 650 190 L 550 190 L 0 300 Z"
-          fill="none"
-          stroke="#e8e8e5"
-          strokeWidth="1.5"
-        />
-        {lines.map((line, i) => (
-          <line key={i} x1={line.x} y1={line.y1} x2={line.x} y2={line.y2} stroke="#e8e8e5" strokeWidth="1.5" />
-        ))}
+    <div className="relative w-full h-44 bg-white">
+      {/* Layer 1: bowtie shape + internal divider lines (stretched to fill width) */}
+      <svg viewBox={`0 0 ${vW} ${vH}`} className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+        <path d={path} fill="white" stroke="#e8e8e5" strokeWidth="1.5" />
+        {divXs.slice(1, -1).map((x, i) => {
+          const { yTop, yBottom } = getBounds(x);
+          return <line key={i} x1={x} y1={yTop} x2={x} y2={yBottom} stroke="#e8e8e5" strokeWidth="1.5" />;
+        })}
       </svg>
 
-      {/* Layer 2: normal aspect ratio — pills and labels */}
-      <svg viewBox="0 0 1200 300" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
-        {lines.map((line, i) => (
-          <g key={i}>
-            {line.pills.map((pill, pIdx) => {
-              const colors = pillColors[pill.color as keyof typeof pillColors];
-              const yPos = 150 + (pIdx === 0 ? -28 : 28) * (line.pills.length > 1 ? 1 : 0);
-              const pillWidth = pill.val.length * 8 + 16;
-              return (
-                <g key={pIdx} transform={`translate(${line.x - pillWidth/2}, ${yPos - 12})`}>
-                  <rect width={pillWidth} height="24" rx="6" fill={colors.bg} />
-                  <text
-                    x={pillWidth/2}
-                    y="16"
-                    textAnchor="middle"
-                    fill={colors.text}
-                    fontSize="13"
-                    fontWeight="bold"
-                  >
-                    {pill.val}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-        ))}
-        {stages.map((stage, i) => (
+      {/* Layer 2: pills + stage labels (normal aspect ratio — no distortion) */}
+      <svg viewBox={`0 0 ${vW} ${vH}`} className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
+        {/* Stage labels centred in each section */}
+        {stages.map((label, i) => (
           <text
             key={i}
-            x={stage.x}
-            y="155"
+            x={(divXs[i] + divXs[i + 1]) / 2}
+            y={cy + 5}
             textAnchor="middle"
             fill="#94a3b8"
             fontSize="13"
             fontWeight="500"
           >
-            {stage.label}
+            {label}
           </text>
         ))}
+
+        {/* Pills centred on each divider line */}
+        {dividers.map((div, i) => {
+          const x = divXs[i];
+          return (
+            <g key={i}>
+              {div.pills.map((pill, pIdx) => {
+                const colors = pillColors[pill.color as keyof typeof pillColors];
+                const w = pillW(pill.val);
+                const pillCy = div.pills.length === 1 ? cy : pIdx === 0 ? cy - 17 : cy + 17;
+                return (
+                  <g key={pIdx} transform={`translate(${x - w / 2}, ${pillCy - pillH / 2})`}>
+                    <rect width={w} height={pillH} rx="6" fill={colors.bg} />
+                    <text x={w / 2} y={pillH / 2 + 4} textAnchor="middle" fill={colors.text} fontSize="12" fontWeight="600">
+                      {pill.val}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
