@@ -218,8 +218,8 @@ const BowtieFunnel = () => {
   };
 
   return (
-    <div className="relative w-full h-48 flex items-center justify-center bg-white overflow-hidden">
-      <svg viewBox="0 0 1200 300" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+    <div className="relative w-full h-44 bg-white overflow-hidden">
+      <svg viewBox="0 0 1200 300" className="w-full h-full" preserveAspectRatio="none">
         {/* Main Bowtie Outline */}
         <path
           d="M 0 0 L 550 110 L 650 110 L 1200 0 L 1200 300 L 650 190 L 550 190 L 0 300 Z"
