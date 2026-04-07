@@ -201,14 +201,14 @@ const BowtieFunnel = () => {
   ];
 
   const lines = [
-    { x: 100, y1: 10, y2: 290, pills: [{ val: '108', color: 'red' }, { val: '32', color: 'yellow' }] },
-    { x: 250, y1: 43, y2: 257, pills: [{ val: '12', color: 'red' }, { val: '23', color: 'yellow' }] },
-    { x: 400, y1: 77, y2: 223, pills: [{ val: '4', color: 'red' }, { val: '45', color: 'yellow' }] },
+    { x: 100, y1: 20,  y2: 280, pills: [{ val: '108', color: 'red' }, { val: '32', color: 'yellow' }] },
+    { x: 250, y1: 50,  y2: 250, pills: [{ val: '12', color: 'red' }, { val: '23', color: 'yellow' }] },
+    { x: 400, y1: 80,  y2: 220, pills: [{ val: '4', color: 'red' }, { val: '45', color: 'yellow' }] },
     { x: 550, y1: 110, y2: 190, pills: [] },
     { x: 650, y1: 110, y2: 190, pills: [] },
-    { x: 800, y1: 77, y2: 223, pills: [] },
-    { x: 950, y1: 43, y2: 257, pills: [{ val: '5', color: 'red' }] },
-    { x: 1100, y1: 10, y2: 290, pills: [{ val: '4', color: 'red' }] },
+    { x: 800, y1: 80,  y2: 220, pills: [] },
+    { x: 950, y1: 50,  y2: 250, pills: [{ val: '5', color: 'red' }] },
+    { x: 1100, y1: 20, y2: 280, pills: [{ val: '4', color: 'red' }] },
   ];
 
   const pillColors = {
