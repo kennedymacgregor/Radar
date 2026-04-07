@@ -307,13 +307,26 @@ const StackedBlockChart = () => {
     [0, 1], [0, 1], [1, 0], [0, 1],
   ], []);
 
-  // light grey (no issues) → deep red (many issues)
-  const getColor = (total: number): string => {
-    if (total === 0) return '#f3f4f6';
-    if (total <= 2)  return '#fecaca';
-    if (total <= 6)  return '#fca5a5';
-    if (total <= 10) return '#f87171';
-    if (total <= 14) return '#ef4444';
+  const maxTotal = 17;
+
+  // Seeded pseudo-random so the pattern is stable
+  const seededRand = (seed: number) => {
+    const x = Math.sin(seed + 1) * 10000;
+    return x - Math.floor(x);
+  };
+
+  // Per-cell color: scattered, varied, mostly grey in quiet months
+  const getCellColor = (colIdx: number, rowIdx: number, total: number): string => {
+    const intensity = total / maxTotal;
+    const r1 = seededRand(colIdx * 31 + rowIdx * 17);
+    const r2 = seededRand(colIdx * 31 + rowIdx * 17 + 500);
+    // More grey overall — only colour if rand < intensity * 0.7
+    if (r1 > intensity * 0.7) return '#f3f4f6';
+    const shade = r2;
+    if (shade < 0.25) return '#fecaca';
+    if (shade < 0.50) return '#fca5a5';
+    if (shade < 0.70) return '#f87171';
+    if (shade < 0.87) return '#ef4444';
     return '#dc2626';
   };
 
@@ -325,23 +338,22 @@ const StackedBlockChart = () => {
   return (
     <div className="w-full relative">
         <div className="flex-1 min-w-0">
-          <div className="relative flex gap-[1px]">
+          <div className="relative flex gap-[2px]">
             {/* Data Blocks */}
             {data.map((counts, colIdx) => {
               const total = counts[0] + counts[1];
-              const color = getColor(total);
               return (
               <div
                 key={colIdx}
-                className="flex-1 flex flex-col gap-[1px] relative cursor-crosshair"
+                className="flex-1 flex flex-col gap-[2px] relative cursor-crosshair"
                 onMouseMove={(e) => handleMouseMove(e, colIdx)}
                 onMouseLeave={() => setHoveredCol(null)}
               >
                 {Array.from({ length: rows }).map((_, rowIdx) => (
                     <div
                       key={rowIdx}
-                      className={`w-full aspect-square rounded-[1px] transition-colors duration-200 ${hoveredCol === colIdx ? 'opacity-80' : ''}`}
-                      style={{ backgroundColor: color }}
+                      className={`w-full aspect-square rounded-[3px] transition-colors duration-200 ${hoveredCol === colIdx ? 'opacity-75' : ''}`}
+                      style={{ backgroundColor: getCellColor(colIdx, rowIdx, total) }}
                     />
                 ))}
               </div>
